@@ -1,0 +1,15 @@
+# Host orchestrator dependencies
+requests>=2.31
+tqdm>=4.66
+tabulate>=0.9
+docker>=7.0
+
+# Verification dependencies (also in Docker image)
+torch>=2.0
+numpy>=1.24
+z3-solver>=4.12
+onnx>=1.15
+onnxruntime>=1.17
+
+# Optional: bound propagation (Tier 3)
+# auto_LiRPA

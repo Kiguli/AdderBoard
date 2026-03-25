@@ -1,0 +1,31 @@
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+
+# Install verification dependencies
+RUN pip install --no-cache-dir \
+    numpy \
+    z3-solver \
+    onnx \
+    onnxruntime \
+    requests \
+    tqdm \
+    tabulate
+
+# Install auto_LiRPA for bound propagation
+RUN pip install --no-cache-dir auto_LiRPA || echo "auto_LiRPA install failed — bounds verification unavailable"
+
+# Install Marabou from source (optional, may take a while)
+# RUN apt-get update && apt-get install -y cmake && \
+#     git clone https://github.com/NeuralNetworkVerification/Marabou.git /opt/marabou && \
+#     cd /opt/marabou && mkdir build && cd build && cmake .. && make -j$(nproc)
+
+# Create working directory
+WORKDIR /workspace
+
+# Copy the formal verification framework
+COPY formal/ /workspace/formal/
+COPY verify.py /workspace/verify.py
+
+# GPU access for bound propagation: run with --gpus all
+# Timeout: up to 1 hour per submission
+
+ENTRYPOINT ["python", "-m", "formal.main"]

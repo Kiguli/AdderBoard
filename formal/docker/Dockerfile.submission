@@ -1,0 +1,20 @@
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+
+# No network access at runtime — install everything at build time
+RUN pip install --no-cache-dir numpy
+
+# Create non-root user for safety
+RUN useradd -m -s /bin/bash verifier
+USER verifier
+WORKDIR /home/verifier
+
+# Copy verification infrastructure
+COPY --chown=verifier verify.py /home/verifier/verify.py
+
+# Submission files are mounted at runtime as read-only volumes
+# Usage: docker run --rm --network=none --memory=2g --cpus=2 \
+#   -v /path/to/submission.py:/home/verifier/submission.py:ro \
+#   adderboard-submission python verify.py submission.py
+
+ENTRYPOINT ["python"]
+CMD ["verify.py", "submission.py"]
