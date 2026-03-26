@@ -309,3 +309,40 @@ def iv_softmax_dominant(logits: list[Interval]) -> Optional[int]:
         if is_dominant:
             return i
     return None
+
+
+# ── Additional operations for general model verification ───────────────
+
+def iv_relu(x: Interval) -> Interval:
+    """ReLU(x) = max(x, 0) — exact piecewise-linear interval."""
+    return Interval(max(x.lo, 0.0), max(x.hi, 0.0))
+
+
+def iv_matmul(W: list[list[float]], x: list[Interval]) -> list[Interval]:
+    """Matrix-vector multiply: constant matrix W times interval vector x.
+
+    W is a list of rows, each row a list of floats.
+    Returns a list of Interval results.
+    """
+    result = []
+    for row in W:
+        assert len(row) == len(x)
+        acc = Interval(0.0)
+        for wij, xj in zip(row, x):
+            acc = acc + xj * wij
+        result.append(acc)
+    return result
+
+
+def iv_matmul_bias(W: list[list[float]], x: list[Interval],
+                   b: list[float]) -> list[Interval]:
+    """Matrix-vector multiply with bias: W @ x + b."""
+    out = iv_matmul(W, x)
+    return [oi + bi for oi, bi in zip(out, b)]
+
+
+def iv_rms_norm_weighted(x: list[Interval], weights: list[float],
+                         eps: float = 1e-6) -> list[Interval]:
+    """RMSNorm with per-dimension weights: (x / sqrt(mean(x²) + eps)) * w."""
+    normed = iv_rms_norm(x, eps)
+    return [ni * wi for ni, wi in zip(normed, weights)]
