@@ -1,27 +1,27 @@
 # AdderBoard Formal Verification Status
 
-Generated: 2026-03-25
+Generated: 2026-03-26
 
 ## Hand-Coded Weights (23 submissions)
 
 | Rank | Author | Params | Accuracy | Architecture | Verification | Method | Time | Counterexample | Notes |
 |------|--------|-------:|----------|--------------|:------------:|--------|-----:|----------------|-------|
-| 1 | zcbtrak | 6 | 100% | 1L Qwen-derived, d=2, 1h, hd=2, ff=2 | VERIFIED | Exhaustive | 121.5s | — | — |
-| 2 | kswain98 | 8 | 100% | 1L Qwen-style, d=2, 1h, hd=2, ff=2 | VERIFIED | Exhaustive | 849.9s | — | — |
+| 1 | zcbtrak | 6 | 100% | 1L Qwen-derived, d=2, 1h, hd=2, ff=2 | **PROVEN** | Structural algebraic | 26.5s | — | Rigorous proof via interval arithmetic over 1024 carry partitions |
+| 2 | kswain98 | 8 | 100% | 1L Qwen-style, d=2, 1h, hd=2, ff=2 | TESTED | Exhaustive sampling | 849.9s | — | ~102K samples, not a proof |
 | 3 | lokimorty | 10 | 100% | 1L Qwen-derived, d=2, 1h, hd=2, ff=2 | NOT RUN | — | — | — | Requires `mlx` (Apple only) |
 | 4 | lokimorty | 12 | 100% | 1L Qwen-derived, d=2, 1h, hd=2, ff=2 | NOT RUN | — | — | — | Requires `mlx` (Apple only) |
-| 5 | yieldthought | 20 | 100% | 1L decoder, d=2, 1h, hd=2 | VERIFIED | Exhaustive | 343.1s | — | — |
+| 5 | yieldthought | 20 | 100% | 1L decoder, d=2, 1h, hd=2 | TESTED | Exhaustive sampling | 343.1s | — | ~102K samples, not a proof |
 | 6 | Wonderfall | 27 | 100% | 1L decoder, d=2, 1h, hd=2 | NOT RUN | — | — | — | Requires `mlx` (Apple only) |
-| 7 | jacobli99 | 28 | 100% | 1L decoder, d=2, 5h (MQA), hd=2, ff=4 | VERIFIED | Exhaustive | 904.7s | — | — |
+| 7 | jacobli99 | 28 | 100% | 1L decoder, d=2, 5h (MQA), hd=2, ff=4 | TESTED | Exhaustive sampling | 904.7s | — | ~102K samples, not a proof |
 | 8 | Arch222 | 31 | 100% | 1L decoder, d=3, 4h/1kv, hd=2, ff=4 | NOT RUN | — | — | — | Missing module `tiny_transformer_adder` |
-| 9 | fblissjr | 33 | 100% | 1L decoder, d=3, 3h (d_head=1), ff=4 | VERIFIED | Exhaustive | 349.9s | — | — |
-| 10 | alexlitz | 36 | 100% | 2L decoder, d=5, 5h+1h | FALSIFIED | Exhaustive | 1.2s | 5193798811 + 1806201129 = 6999999940, model says 7000000000 | Carry propagation error |
-| 11 | lichengliu03 | 50 | 100% | 1L custom GPT, d=4, 2h, hd=2 | VERIFIED | Exhaustive | 795.8s | — | — |
+| 9 | fblissjr | 33 | 100% | 1L decoder, d=3, 3h (d_head=1), ff=4 | TESTED | Exhaustive sampling | 349.9s | — | ~102K samples, not a proof |
+| 10 | alexlitz | 36 | 100% | 2L decoder, d=5, 5h+1h | FALSIFIED | Exhaustive sampling | 1.2s | 5193798811 + 1806201129 = 6999999940, model says 7000000000 | Carry propagation error |
+| 11 | lichengliu03 | 50 | 100% | 1L custom GPT, d=4, 2h, hd=2 | TESTED | Exhaustive sampling | 795.8s | — | ~102K samples, not a proof |
 | 12 | cosminscn | 66 | 100% | 1L nanoGPT, d=4, 2h | NOT RUN | — | — | — | Missing `build_model()` |
 | 13 | bingbangboom-lab | 87 | 100% | 2L Qwen3, d=5, 2h/1kv, hd=2, ff=3 | NOT RUN | — | — | — | Missing `build_model()` |
 | 14 | jacobli99 | 93 | 100% | 1L decoder, d=2, 5h (MQA), hd=2, ff=4 | NOT RUN | — | — | — | Syntax error in source |
 | 15 | corbensorenson | 111 | 100% | 1L decoder, d=3, 4h/1kv, hd=2, ff=2 | NOT RUN | — | — | — | GitHub 404 (not fetched) |
-| 16 | nino | 116 | 100% | 1L Qwen3, d=3, 4h/1kv, hd=2 | VERIFIED | Exhaustive | 608.3s | — | — |
+| 16 | nino | 116 | 100% | 1L Qwen3, d=3, 4h/1kv, hd=2 | TESTED | Exhaustive sampling | 608.3s | — | ~102K samples, not a proof |
 | 17 | Wonderfall | 121 | 100% | 1L Qwen3, d=3, 4h/1kv, hd=2, ff=2 | NOT RUN | — | — | — | Requires `mlx` (Apple only) |
 | 18 | cosminscn | 130 | 100% | 1L nanoGPT, d=4, 2h | NOT RUN | — | — | — | Missing `build_model()` |
 | 19 | Wonderfall | 130 | 100% | 1L Qwen3, d=3, 4h/1kv, hd=2, ff=3 | NOT RUN | — | — | — | Requires `mlx` (Apple only) |
@@ -51,7 +51,7 @@ Generated: 2026-03-25
 | 15 | tbukic | 95 | 99.03% | 1L Qwen3 + circular arc, d=3, 1h/1kv, hd=4, ff=3 | NOT RUN | — | — | — | Missing module `minimal10digittransformer` |
 | 16 | tbukic | 101 | 100% | 1L Qwen3, d=3, 1h/1kv, hd=4, ff=2 | NOT RUN | — | — | — | Missing module `minimal10digittransformer` |
 | 17 | staghado | 122 | 99.95% | 1L Qwen3, d=3, 1h/1kv, hd=4, ff=3 | NOT RUN | — | — | — | Requires `mlx` (Apple only) |
-| 18 | dimopep | 140 | 100% | 1L decoder, d=4, 1h/1kv, hd=4, ff=4 | VERIFIED | Exhaustive | 728.8s | — | — |
+| 18 | dimopep | 140 | 100% | 1L decoder, d=4, 1h/1kv, hd=4, ff=4 | TESTED | Exhaustive sampling | 728.8s | — | ~102K samples, not a proof |
 | 19 | JackCai1206 | 234 | 99.91% | 1L decoder, d=6 (3+3), 2h, hd=3, ff=2 | NOT RUN | — | — | — | GitHub 404 (not fetched) |
 | 20 | lichengliu03 | 262 | 99.95% | 1L decoder, d=4, 1h, ff=8 | NOT RUN | — | — | — | GitHub 404 (not fetched) |
 | 21 | ryanyord | 275 | 99.98% | 1L decoder, d=4, 1h, ff=8 | ERROR | Bounds | 0.0s | — | auto_LiRPA not installed |
@@ -69,10 +69,19 @@ Generated: 2026-03-25
 | Metric | Count |
 |--------|------:|
 | Total submissions | 52 |
-| Formally verified | 8 |
+| **Formally proven (rigorous)** | **1** |
+| Tested (exhaustive sampling, not a proof) | 7 |
 | Falsified (counterexample found) | 2 |
 | Not run (could not load) | 41 |
 | Error during verification | 1 |
+
+### Verification method key
+
+| Label | Meaning |
+|-------|---------|
+| **PROVEN** | Rigorous mathematical proof that the model is correct for ALL 10^20 inputs. Uses structural algebraic analysis with sound interval arithmetic. |
+| TESTED | Structured exhaustive sampling (~102K tests across 1024 carry partitions). Provides high confidence but is NOT a proof — only tests ~10^-15 of the input space. |
+| FALSIFIED | Counterexample found that proves the model is incorrect. |
 
 ### Failure breakdown (42 not verified)
 
