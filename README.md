@@ -172,13 +172,13 @@ Transformers solve these using attention (for alignment), MLPs (for arithmetic),
 If you use AdderBoard in your research, please cite:
 
 ```bibtex
-@misc{papailiopoulos2026adderboard,
+@misc{papailiopoulos2025adderboard,
   author       = {Papailiopoulos, Dimitris},
-  title        = {{AdderBoard}: A Benchmark for Minimum-Parameter Addition Transformers},
-  year         = {2026},
+  title        = {{AdderBoard}: A Community Challenge for Tiny Arithmetic Transformers},
+  year         = {2025},
   publisher    = {GitHub},
   howpublished = {\url{https://github.com/anadim/AdderBoard}},
-  note         = {Community benchmark for minimal transformers that perform 10-digit addition}
+  note         = {Open challenge and leaderboard for building the smallest transformers that can perform integer addition}
 }
 ```
 
