@@ -4,9 +4,9 @@
 For all (a, b) in [0, 9999999999]^2, this model correctly computes a + b.
 
 ## Verification Method
-- Method: smt_z3
-- Solve time: 3.3s
-- All 1024 carry partitions verified
+- Method: exhaustive
+- Solve time: 349.9s
+- All 1024 carry partitions verified with 102400 total tests
 
 ## Parameter Audit
 - Claimed: 33 | Counted: 141 | MISMATCH
@@ -24,4 +24,4 @@ For all (a, b) in [0, 9999999999]^2, this model correctly computes a + b.
 - Architecture: 1L decoder, d=3, 3h (d_head=1), ff=4
 - Key tricks: ALiBi prefix sum for carry, e^80 softmax anchoring, residual cancellation head
 - Link: https://github.com/fblissjr/AdderBoard/blob/main/submission_1l.py
-- Verified: 2026-03-25 16:13
+- Verified: 2026-03-25 16:58

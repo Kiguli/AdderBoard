@@ -4,9 +4,9 @@
 For all (a, b) in [0, 9999999999]^2, this model correctly computes a + b.
 
 ## Verification Method
-- Method: smt_z3
-- Solve time: 4.4s
-- All 1024 carry partitions verified
+- Method: exhaustive
+- Solve time: 795.8s
+- All 1024 carry partitions verified with 102400 total tests
 
 ## Parameter Audit
 - Claimed: 50 | Counted: 50 | Match
@@ -25,4 +25,4 @@ For all (a, b) in [0, 9999999999]^2, this model correctly computes a + b.
 - Architecture: 1L custom GPT, d=4, 2h, hd=2
 - Key tricks: Factorized embed, rotation Q, tied embed+V dir, rank-1 MLP, parabolic head
 - Link: https://github.com/lichengliu03/TinyAdder-50p
-- Verified: 2026-03-25 16:13
+- Verified: 2026-03-25 17:13

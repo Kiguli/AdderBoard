@@ -4,9 +4,9 @@
 For all (a, b) in [0, 9999999999]^2, this model correctly computes a + b.
 
 ## Verification Method
-- Method: smt_z3
-- Solve time: 3.6s
-- All 1024 carry partitions verified
+- Method: exhaustive
+- Solve time: 608.3s
+- All 1024 carry partitions verified with 102400 total tests
 
 ## Parameter Audit
 - Claimed: 116 | Counted: 116 | Match
@@ -22,4 +22,4 @@ For all (a, b) in [0, 9999999999]^2, this model correctly computes a + b.
 - Architecture: 1L Qwen3, d=3, 4h/1kv, hd=2
 - Key tricks: Tied embed, shared RMSNorm vectors, RoPE (hd=2)
 - Link: https://gist.github.com/prasannakotyal/467d4c54564beba34d9d7edbd41c33dc
-- Verified: 2026-03-25 16:13
+- Verified: 2026-03-25 17:23

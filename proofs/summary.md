@@ -1,6 +1,6 @@
 # AdderBoard Formal Verification Results
 
-Generated: 2026-03-25 16:13
+Generated: 2026-03-25 20:24
 
 ## Hand-Coded Weights
 
@@ -15,7 +15,7 @@ Generated: 2026-03-25 16:13
 | 7 | jacobli99 | 28 | FORMALLY VERIFIED | — | — | — | — |
 | 8 | Arch222 | 31 | INCONCLUSIVE | — | — | — | — |
 | 9 | fblissjr | 33 | FORMALLY VERIFIED | — | — | — | — |
-| 10 | alexlitz | 36 | FORMALLY VERIFIED | — | — | — | — |
+| 10 | alexlitz | 36 | FALSIFIED | — | — | — | — |
 | 11 | lichengliu03 | 50 | FORMALLY VERIFIED | — | — | — | — |
 | 12 | cosminscn | 66 | INCONCLUSIVE | — | — | — | — |
 | 13 | bingbangboom-lab | 87 | INCONCLUSIVE | — | — | — | — |
@@ -35,7 +35,7 @@ Generated: 2026-03-25 16:13
 | Rank | Author | Params | Formal Status | Counterexample (a, b) | Expected | Model Output | Failure Type |
 |------|--------|--------|---------------|----------------------|----------|--------------|--------------|
 | 1 | tbukic | 36 | INCONCLUSIVE | — | — | — | — |
-| 2 | lokimorty | 39 | FORMALLY VERIFIED | — | — | — | — |
+| 2 | lokimorty | 39 | FALSIFIED | — | — | — | — |
 | 3 | tbukic | 41 | INCONCLUSIVE | — | — | — | — |
 | 4 | tbukic | 44 | INCONCLUSIVE | — | — | — | — |
 | 5 | tbukic | 45 | INCONCLUSIVE | — | — | — | — |
@@ -67,7 +67,7 @@ Generated: 2026-03-25 16:13
 ## Summary
 
 - **Total submissions**: 52
-- **Formally verified**: 10
-- **Falsified**: 0
+- **Formally verified**: 8
+- **Falsified**: 2
 - **Timeout**: 0
 - **Inconclusive**: 42
