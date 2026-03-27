@@ -167,7 +167,37 @@ def verify_submission(
 ) -> SMTVerificationResult:
     """Dispatch to the appropriate model-specific verifier."""
 
-    if submission_id == "kswain98_8p":
+    if submission_id == "lokimorty_10p":
+        from .verifiers.lokimorty_10p import create_verifier
+        v = create_verifier(model)
+        return verify_model(v, timeout_seconds, "structural_algebraic")
+
+    elif submission_id == "lokimorty_12p":
+        from .verifiers.lokimorty_12p import create_verifier
+        v = create_verifier(model)
+        return verify_model(v, timeout_seconds, "structural_algebraic")
+
+    elif submission_id == "wonderfall_27p":
+        from .verifiers.wonderfall_27p import create_verifier
+        v = create_verifier(model)
+        return verify_model(v, timeout_seconds, "structural_algebraic")
+
+    elif submission_id == "wonderfall_121p":
+        from .verifiers.wonderfall_d3 import create_verifier_121p
+        v = create_verifier_121p(model)
+        return verify_model(v, timeout_seconds, "structural_algebraic")
+
+    elif submission_id == "wonderfall_130p":
+        from .verifiers.wonderfall_d3 import create_verifier_130p
+        v = create_verifier_130p(model)
+        return verify_model(v, timeout_seconds, "structural_algebraic")
+
+    elif submission_id == "wonderfall_139p":
+        from .verifiers.wonderfall_d3 import create_verifier_139p
+        v = create_verifier_139p(model)
+        return verify_model(v, timeout_seconds, "structural_algebraic")
+
+    elif submission_id == "kswain98_8p":
         from .verifiers.kswain98 import create_verifier
         v = create_verifier(model)
         return verify_model(v, timeout_seconds, "structural_algebraic")
@@ -193,8 +223,10 @@ def verify_submission(
         return verify_model(v, timeout_seconds, "structural_algebraic")
 
     elif submission_id == "prasannakotyal_116p":
-        from .verifiers.prasannakotyal import create_verifier
-        v = create_verifier(model)
+        # Algebraically identical to Wonderfall 121p (same d=3, ff=2, wrap-only MLP,
+        # CARRY_SLOPE=-0.1 output norm). ROPE_THETA=10000 irrelevant since head_dim=2.
+        from .verifiers.wonderfall_d3 import create_verifier_121p
+        v = create_verifier_121p(model)
         return verify_model(v, timeout_seconds, "structural_algebraic")
 
     elif submission_id == "dimopep_140p":

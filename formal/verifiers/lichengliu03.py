@@ -3,14 +3,17 @@ Formal verifier for lichengliu03_50p.
 
 Architecture: d=4, 2 heads (head_dim=2), ReLU MLP, sinusoidal PE (period=11).
 Prompt: a[9]a[8]..a[0]+b[9]b[8]..b[0]= (22 tokens, MSB first), output 11 digits.
+Output is generated LSB-first: digit k is predicted at position PROMPT_LEN-1+k.
 
 Key properties:
 1. K_proj selects PE channels (dims 1,2) -> position-only attention
 2. Head 0 (angle 8*THETA) peaks at current pair a[k],b[k] with ~0.5 weight each
 3. Head 1 (angle 9*THETA) peaks at previous pair a[k-1],b[k-1]
-4. Score gap ~11.25 -> dominant/other ratio ~77000:1
+4. Score gap >= 11.2 -> dominant/other ratio ~77000:1
 5. 2-hinge ReLU carry (0.5/1.5) and wrap (9045/9055) detection
 6. Parabolic head: logit[d] = 2*d*z - d^2
+7. PE at output positions has amplitude 1 (vs 100 for prompt), introducing
+   small carry bias (max ~0.49) absorbed by parabolic head's 1-unit gap.
 """
 
 import math
@@ -34,13 +37,17 @@ def _build_pe(seq_len):
 
 
 def _precompute_attention_weights(pe):
-    """Precompute exact attention weights for each (output_digit_k, head)."""
+    """Precompute exact attention weights for each (output_digit_k, head).
+
+    Digit k is predicted at position PROMPT_LEN - 1 + k:
+      k=0 at position 21 (the '=' token), k=1 at position 22, etc.
+    """
     q_angles = [8 * THETA, 9 * THETA]
     all_weights = {}
 
     for k in range(OUTPUT_DIGITS):
-        p = PROMPT_LEN + k
-        seq_len = p + 1
+        p = PROMPT_LEN - 1 + k  # prediction position
+        seq_len = p + 1          # causal: can see positions 0..p
 
         K = pe[:seq_len, 1:3]
         weights_per_head = []
@@ -112,90 +119,16 @@ class Lichengliu03Verifier:
             self.a_seq_pos[k] = 9 - k
             self.b_seq_pos[k] = 20 - k
 
-    def _head_v_sum_bounds(self, k, head, carry_mask, digit_sum_k, prev_output_digits):
-        """Compute tight [lo, hi] bounds on the weighted V-sum for a head.
+    def _head_v_sum_for_dsum(self, k, head, dsum, prev_output_digits):
+        """Compute tight V-sum bounds for a head, given the exact digit sum.
 
-        Strategy: identify dominant positions (the pair the head targets),
-        compute their contribution tightly using digit_sum constraint,
-        and bound all other positions conservatively with their tiny weights.
+        The two dominant positions (a[target_k] and b[target_k]) are always
+        separated by exactly 11 in sequence position, so they have identical
+        attention scores and thus w_a = w_b. This means:
+            w_a*a + w_b*b = w_a*(a+b) = w_a*dsum  (exact, zero-width interval)
+
+        All other positions contribute negligibly (weights ~1/77000).
         """
-        w = self.all_weights[k][head]
-        seq_len = len(w)
-
-        # Head 0 targets pair at digit k, head 1 targets pair at digit k-1
-        target_k = k if head == 0 else k - 1
-
-        # Identify dominant pair positions
-        if 0 <= target_k < 10:
-            dom_a = self.a_seq_pos[target_k]
-            dom_b = self.b_seq_pos[target_k]
-        else:
-            dom_a = -1
-            dom_b = -1
-
-        # Get digit_sum for the targeted pair
-        if 0 <= target_k < 10:
-            if head == 0:
-                dsum = digit_sum_k
-            else:
-                # For head 1, we need bounds on digit_sum at position target_k
-                # This depends on which output digits are possible there
-                c_in_tk = _carry_in_at(carry_mask, target_k)
-                c_out_tk = _carry_out_at(carry_mask, target_k)
-                # Compute all possible digit sums
-                dsums = set()
-                for a_d in range(10):
-                    for b_d in range(10):
-                        s = a_d + b_d + c_in_tk
-                        if (c_out_tk and s >= 10) or (not c_out_tk and s < 10):
-                            dsums.add(a_d + b_d)
-                dsum_lo = min(dsums)
-                dsum_hi = max(dsums)
-
-        # Compute weighted V-sum bounds
-        total_lo = 0.0
-        total_hi = 0.0
-
-        for s in range(seq_len):
-            ws = w[s]
-            if ws < 1e-15:
-                continue
-
-            # Determine V bounds at position s
-            if s == dom_a or s == dom_b:
-                # Dominant position: V is a digit from the constrained pair
-                if head == 0:
-                    # digit ranges: a in [max(0,dsum-9), min(9,dsum)]
-                    v_lo = float(max(0, dsum - 9))
-                    v_hi = float(min(9, dsum))
-                else:
-                    # For head 1, use dsum range
-                    v_lo = float(max(0, dsum_lo - 9))
-                    v_hi = float(min(9, dsum_hi))
-            elif s == 10 or s == 21:
-                # Separator tokens: + and =, value 0
-                continue
-            elif s <= 9:
-                # a[9-s] digit: unconstrained, V in [0, 9]
-                v_lo, v_hi = 0.0, 9.0
-            elif s <= 20:
-                # b[20-s] digit: unconstrained, V in [0, 9]
-                v_lo, v_hi = 0.0, 9.0
-            else:
-                # Output token at position 22+j
-                j = s - 22
-                if j < len(prev_output_digits) and prev_output_digits[j] >= 0:
-                    v_lo = v_hi = float(prev_output_digits[j])
-                else:
-                    v_lo, v_hi = 0.0, 9.0
-
-            total_lo += ws * v_lo
-            total_hi += ws * v_hi
-
-        return Interval(total_lo, total_hi)
-
-    def _head_v_sum_tight(self, k, head, carry_mask, digit_sum_k, prev_output_digits):
-        """Even tighter bounds: use V(a)+V(b) = digit_sum constraint at dominant pair."""
         w = self.all_weights[k][head]
         seq_len = len(w)
 
@@ -215,11 +148,11 @@ class Lichengliu03Verifier:
             if ws < 1e-15 or s == dom_a or s == dom_b:
                 continue
             if s == 10 or s == 21:
-                continue
+                continue  # separators, value 0
             if s <= 20:
                 v_lo, v_hi = 0.0, 9.0
             else:
-                j = s - 22
+                j = s - PROMPT_LEN
                 if j < len(prev_output_digits) and prev_output_digits[j] >= 0:
                     v_lo = v_hi = float(prev_output_digits[j])
                 else:
@@ -227,44 +160,23 @@ class Lichengliu03Verifier:
             other_lo += ws * v_lo
             other_hi += ws * v_hi
 
-        # Dominant pair contribution: w_a * V(a) + w_b * V(b)
-        # where V(a) + V(b) = digit_sum (constrained)
+        # Dominant pair: w_a * V(a) + w_b * V(b)
+        # where V(a) + V(b) = dsum, V(a) in [max(0, dsum-9), min(9, dsum)]
+        # = (w_a - w_b) * V(a) + w_b * dsum
         if dom_a >= 0 and dom_b >= 0:
             w_a = w[dom_a]
             w_b = w[dom_b]
-
-            if head == 0:
-                dsum = digit_sum_k
-                # V(a) + V(b) = dsum, V(a) in [max(0,dsum-9), min(9,dsum)]
-                # w_a*V(a) + w_b*V(b) = w_a*V(a) + w_b*(dsum - V(a)) = (w_a-w_b)*V(a) + w_b*dsum
-                a_lo = max(0, dsum - 9)
-                a_hi = min(9, dsum)
-                if w_a >= w_b:
-                    dom_lo = (w_a - w_b) * a_lo + w_b * dsum
-                    dom_hi = (w_a - w_b) * a_hi + w_b * dsum
-                else:
-                    dom_lo = (w_a - w_b) * a_hi + w_b * dsum
-                    dom_hi = (w_a - w_b) * a_lo + w_b * dsum
+            a_lo = max(0, dsum - 9)
+            a_hi = min(9, dsum)
+            if w_a >= w_b:
+                dom_lo = (w_a - w_b) * a_lo + w_b * dsum
+                dom_hi = (w_a - w_b) * a_hi + w_b * dsum
             else:
-                # Head 1: digit sum at target_k varies
-                c_in_tk = _carry_in_at(carry_mask, target_k)
-                c_out_tk = _carry_out_at(carry_mask, target_k)
-                combos = []
-                for a_d in range(10):
-                    for b_d in range(10):
-                        s = a_d + b_d + c_in_tk
-                        if (c_out_tk and s >= 10) or (not c_out_tk and s < 10):
-                            combos.append(w_a * a_d + w_b * b_d)
-                dom_lo = min(combos)
-                dom_hi = max(combos)
-
-            total_lo = dom_lo + other_lo
-            total_hi = dom_hi + other_hi
+                dom_lo = (w_a - w_b) * a_hi + w_b * dsum
+                dom_hi = (w_a - w_b) * a_lo + w_b * dsum
+            return Interval(dom_lo + other_lo, dom_hi + other_hi)
         else:
-            total_lo = other_lo
-            total_hi = other_hi
-
-        return Interval(total_lo, total_hi)
+            return Interval(other_lo, other_hi)
 
     def verify_digit(self, carry_mask, digit_pos, target_digit, prev_output_digits):
         k = digit_pos
@@ -275,28 +187,38 @@ class Lichengliu03Verifier:
         else:
             digit_sum = 0
 
-        # Head outputs with tight V-sum bounds
-        head0_vsum = self._head_v_sum_tight(k, 0, carry_mask, digit_sum, prev_output_digits)
-        head1_vsum = self._head_v_sum_tight(k, 1, carry_mask, digit_sum, prev_output_digits)
+        # Head 0 targets current pair (digit k) -- independent of d_prev
+        head0_vsum = self._head_v_sum_for_dsum(k, 0, digit_sum, prev_output_digits)
 
-        # O-proj: head0 -> dim3 (scale 2.0), head1 -> dim1 (scale 2.0)
+        # O-proj: head0 -> dim3 (scale 2.0)
         head0_out = head0_vsum * 2.0
-        head1_out = head1_vsum * 2.0
 
-        # PE at output position
-        p = PROMPT_LEN + k
+        # PE at prediction position (digit k predicted at PROMPT_LEN - 1 + k)
+        p = PROMPT_LEN - 1 + k
         pe_sin = self.pe[p, 1]
         pe_cos = self.pe[p, 2]
 
-        # Previous output digit (the token embedding at this output position)
+        # Previous output digit (the token at the prediction position)
         if k == 0:
             d_prev_list = [0]  # '=' token has value 0
         else:
             d_prev_list = _possible_output_digits(carry_mask, k - 1)
 
         for d_prev in d_prev_list:
+            # Head 1 targets previous pair (digit k-1), conditioned on d_prev.
+            # d_prev uniquely determines dsum_prev within this carry partition,
+            # giving tight V-sum bounds.
+            if k == 0:
+                # Head 1 peaks at separators (pos 10, 21) with value 0
+                head1_vsum = self._head_v_sum_for_dsum(k, 1, 0, prev_output_digits)
+            else:
+                dsum_prev = _digit_sum_for_target(carry_mask, k - 1, d_prev)
+                head1_vsum = self._head_v_sum_for_dsum(k, 1, dsum_prev, prev_output_digits)
+
+            head1_out = head1_vsum * 2.0
+
             # x after attention residual:
-            # dim0 = d_prev (from embedding)
+            # dim0 = d_prev (from embedding, embed_dir = [1,0,0,0])
             # dim1 = pe_sin + head1_out (PE + attention)
             # dim2 = pe_cos (PE only, no attention writes here)
             # dim3 = head0_out (attention only, no PE in dim3)
@@ -306,12 +228,34 @@ class Lichengliu03Verifier:
             dim3 = head0_out
 
             # MLP carry: ci = dot(x, [-1, 1, 0, 0]) = -dim0 + dim1
+            # carry = relu(ci - 0.5) - relu(ci - 1.5)
+            # 2-hinge optimization: exploit correlation (same ci in both terms)
             ci = -dim0 + dim1
-            carry = iv_relu(ci + Interval(-0.5)) - iv_relu(ci + Interval(-1.5))
+            ci_lo_term = ci + Interval(-0.5)   # ci - 0.5
+            ci_hi_term = ci + Interval(-1.5)   # ci - 1.5
+            if ci_hi_term.lo > 0:
+                carry = Interval(1.0)  # both positive: exact 1
+            elif ci_lo_term.hi < 0:
+                carry = Interval(0.0)  # both non-positive: exact 0
+            elif ci_lo_term.lo > 0 and ci_hi_term.hi < 0:
+                carry = ci_lo_term     # first positive, second zero: ci - 0.5
+            else:
+                carry = iv_relu(ci_lo_term) - iv_relu(ci_hi_term)
 
             # MLP wrap: wi = dot(x, [-10, 10, 0, 1000]) = -10*dim0 + 10*dim1 + 1000*dim3
+            # wrap = relu(wi - 9055) - relu(wi - 9045)
+            # 2-hinge optimization
             wi = dim0 * (-10.0) + dim1 * 10.0 + dim3 * 1000.0
-            wrap = iv_relu(wi + Interval(-9055.0)) - iv_relu(wi + Interval(-9045.0))
+            wi_lo_term = wi + Interval(-9055.0)  # wi - 9055
+            wi_hi_term = wi + Interval(-9045.0)  # wi - 9045
+            if wi_lo_term.lo > 0:
+                wrap = Interval(-10.0)  # both positive: exact -10
+            elif wi_hi_term.hi < 0:
+                wrap = Interval(0.0)    # both non-positive: exact 0
+            elif wi_hi_term.lo > 0 and wi_lo_term.hi < 0:
+                wrap = -wi_hi_term      # -(wi - 9045)
+            else:
+                wrap = iv_relu(wi_lo_term) - iv_relu(wi_hi_term)
 
             # MLP output -> dim3 only (accum_dir = [0,0,0,1])
             dim3_final = dim3 + carry + wrap
